@@ -21,8 +21,8 @@ function [alarm,t] = va_detect(ecg_data,Fs)
 
 %  Processing frames: adjust frame length & overlap here
 %------------------------------------------------------
-frame_sec = 10; % sec
-overlap = 0.5;  % 50% overlap between consecutive frames
+frame_sec = 5; % sec
+overlap = 0.0;  % 50% overlap between consecutive frames
 
 
 % Input argument checking
@@ -43,16 +43,43 @@ frame_step = round(frame_length*(1-overlap));  % amount to advance for next data
 ecg_length = length(ecg_data);  % length of input vector
 frame_N = floor((ecg_length-(frame_length-frame_step))/frame_step); % total number of frames
 alarm = zeros(frame_N,1);	% initialize output signal to all zeros
+max_min_lst = zeros(frame_N,1);
+average_lst = zeros(frame_N,1);
 t = ([0:frame_N-1]*frame_step+frame_length)/Fs;
 
 % Analysis loop: each iteration processes one frame of data
 %----------------------------------------------------------
+count = 0;
+hold on
 for i = 1:frame_N
     %  Get the next data segment
     seg = ecg_data(((i-1)*frame_step+1):((i-1)*frame_step+frame_length));
-    %  Perform computations on the segment . . .
-    %  Decide whether or not to set alarm . . .
-    if something or other . . .
+%     filter_coeffs = fir1(100,[1/250 10/250],hann(101)); % Attila the Hann
+%     filt_signal = filter(filter_coeffs,1,seg); %filtering is not helping?
+    filt_signal = seg;
+    [clean_filt_psd, f] = pwelch(filt_signal, [], [], [],250);
+    [max_min_lst(i), average_lst(i)] = get_envelope(clean_filt_psd, f, 3.5, 6.5);
+%         alarm(i) = 1
+    count = count + 1;
+    % define normal segment as chunks in the first 20 seconds - 4 segment
+end
+% plot(max_min_lst)
+% plot(average_lst)
+%plot(f,pow2db(clean_filt_psd));
+normal_window = 20;
+end_slice = round(normal_window/frame_sec);
+normal_avg = mean(average_lst(1:end_slice));
+normal_max_min = mean(max_min_lst(1:end_slice));
+avg_thresh = 1.5;
+maxmin_thresh = 1.5;
+for i = 1:frame_N
+    uppermaxmin = normal_max_min * maxmin_thresh;
+    upperavg = normal_avg * avg_thresh;
+    if average_lst(i) > upperavg && max_min_lst(i) > uppermaxmin
         alarm(i) = 1;
     end
 end
+
+
+
+
