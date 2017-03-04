@@ -45,6 +45,7 @@ frame_N = floor((ecg_length-(frame_length-frame_step))/frame_step); % total numb
 alarm = zeros(frame_N,1);	% initialize output signal to all zeros
 max_min_lst = zeros(frame_N,1);
 average_lst = zeros(frame_N,1);
+max_env = zeros(frame_N,1);
 t = ([0:frame_N-1]*frame_step+frame_length)/Fs;
 
 % Analysis loop: each iteration processes one frame of data
@@ -57,25 +58,29 @@ for i = 1:frame_N
 %     filter_coeffs = fir1(100,[1/250 10/250],hann(101)); % Attila the Hann
 %     filt_signal = filter(filter_coeffs,1,seg); %filtering is not helping?
     filt_signal = seg;
-    [clean_filt_psd, f] = pwelch(filt_signal, [], [], [],250);
-    [max_min_lst(i), average_lst(i)] = get_envelope(clean_filt_psd, f, 3.5, 6.5);
+    [clean_filt_psd, f] = pwelch(filt_signal, [], [], 0:0.05:30,250);
+    [max_min_lst(i), average_lst(i), max_env(i)] = get_envelope(clean_filt_psd, f, 3.5, 6.5);
 %         alarm(i) = 1
     count = count + 1;
     % define normal segment as chunks in the first 20 seconds - 4 segment
 end
 % plot(max_min_lst)
 % plot(average_lst)
+% plot(max_env)
 %plot(f,pow2db(clean_filt_psd));
 normal_window = 20;
 end_slice = round(normal_window/frame_sec);
 normal_avg = mean(average_lst(1:end_slice));
 normal_max_min = mean(max_min_lst(1:end_slice));
+normal_env = mean(max_env(1:end_slice));
 avg_thresh = 1.5;
 maxmin_thresh = 1.5;
-for i = 1:frame_N
+env_thresh = 1.75;
+for i = (end_slice+1):frame_N
     uppermaxmin = normal_max_min * maxmin_thresh;
     upperavg = normal_avg * avg_thresh;
-    if average_lst(i) > upperavg && max_min_lst(i) > uppermaxmin
+    upperenv = env_thresh*normal_env;
+    if (max_env(i) > upperenv)
         alarm(i) = 1;
     end
 end
