@@ -21,7 +21,7 @@ function [alarm,t] = va_detect(ecg_data,Fs)
 
 %  Processing frames: adjust frame length & overlap here
 %------------------------------------------------------
-frame_sec = 5; % sec
+frame_sec = 10; % sec
 overlap = 0.0;  % 50% overlap between consecutive frames
 
 
@@ -55,19 +55,15 @@ hold on
 for i = 1:frame_N
     %  Get the next data segment
     seg = ecg_data(((i-1)*frame_step+1):((i-1)*frame_step+frame_length));
-%     filter_coeffs = fir1(100,[1/250 10/250],hann(101)); % Attila the Hann
-%     filt_signal = filter(filter_coeffs,1,seg); %filtering is not helping?
     filt_signal = seg;
-    [clean_filt_psd, f] = pwelch(filt_signal, [], [], 0:0.05:30,250);
+        
+%     plot(abs(fftshift(fft(seg))))
+%     plot(abs(fftshift(fft(filt_signal))))
+%     pause(1234)
+    [clean_filt_psd, f] = pwelch(filt_signal, 2048, 0, 0:0.005:30,250);
     [max_min_lst(i), average_lst(i), max_env(i)] = get_envelope(clean_filt_psd, f, 3.5, 6.5);
-%         alarm(i) = 1
     count = count + 1;
-    % define normal segment as chunks in the first 20 seconds - 4 segment
 end
-% plot(max_min_lst)
-% plot(average_lst)
-% plot(max_env)
-%plot(f,pow2db(clean_filt_psd));
 normal_window = 20;
 end_slice = round(normal_window/frame_sec);
 normal_avg = mean(average_lst(1:end_slice));
@@ -75,7 +71,7 @@ normal_max_min = mean(max_min_lst(1:end_slice));
 normal_env = mean(max_env(1:end_slice));
 avg_thresh = 1.5;
 maxmin_thresh = 1.5;
-env_thresh = 1.75;
+env_thresh = 3.0;
 for i = (end_slice+1):frame_N
     uppermaxmin = normal_max_min * maxmin_thresh;
     upperavg = normal_avg * avg_thresh;

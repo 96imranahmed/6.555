@@ -1,6 +1,6 @@
 function [max_min, average, max_env] = get_envelope( psd, f, window_min, window_max )
     hz_diff = 0.1;
-    env_diff = 3;
+    env_diff = 30;
     vec1_start = f > window_min;
     vec1_end = f < window_max;
     vec_1 = logical(vec1_start .* vec1_end);
