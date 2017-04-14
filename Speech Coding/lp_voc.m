@@ -5,15 +5,15 @@ addpath(genpath(folder));
 speech_mat = load('vocod/data/cw161_8k.mat');
 speech_mat = speech_mat.cw161;
 
-% time = 0:1/8000:length(speech_mat)/8000;
-% time = time(1:end-1)';
-% vec1 = time > 0.76;
-% vec2 = time < 0.86;
-% vec = logical(vec1 .* vec2);
-% time_clean = time(vec);
-% sig_clean = speech_mat(vec);
+time = 0:1/8000:length(speech_mat)/8000;
+time = time(1:end-1)';
+vec1 = time > 0.76;
+vec2 = time < 0.86;
+vec = logical(vec1 .* vec2);
+time_clean = time(vec);
+sig_clean = speech_mat(vec);
 % 
-% [coeff, gainz] = lpcoef(sig_clean,12);
+% [coeff, gainz] = lpcoef(sig_clean,20);
 % F = [0:0.5:4000];
 % Fs = 8000;
 % [H,F_actual] = freqz(gainz,coeff, F, Fs);
@@ -22,10 +22,20 @@ speech_mat = speech_mat.cw161;
 % vec = vec(1:end/2 +1);
 % plot([0:1:4000],vec); %FIX by increasing DFT bins
 % plot(F_actual, abs(H));
-
+% xlabel('Frequency (Hz)')
+% ylabel('Amplitude')
+% title('DFT vs LP spectra with model order 20')
 [coeff, gain, pitch] = mylpvocod_ana(speech_mat,12);
 sig = mylpvocod_syn(coeff, gain, pitch);
-soundsc(sig, 8000)
+% soundsc(sig, 8000)
+if max(sig) > 1
+    sig = sig./max(sig);
+end
+if min(sig) < -1
+    sig = sig./min(sig);
+end
+% soundsc(sig, 8000)
+audiowrite('lp_vocod_out.wav', sig, 8000)
 % plot(pitch);
 % filt = fir1(50, 500/8000);
 % % freqz(filt)
@@ -44,3 +54,8 @@ soundsc(sig, 8000)
 % plot(sig_filt)
 % plot(sig_clean)
 % plot(lag, sig_corr)
+% [coeff, gain] = lpcoef(sig_clean,12);
+% lp_error = filter(coeff, 1, sig_clean);
+% freqz(lp_error)
+% disp(gain);
+% disp(norm(lp_error));

@@ -13,9 +13,16 @@ speech_mat = speech_mat.cw161;
 % vec = logical(vec1 .* vec2);
 % time_clean = time(vec);
 % sig_clean = speech_mat(vec);
-[band_envelopes,pitch] = mychvocod_ana(speech_mat,100,18);
+[band_envelopes,pitch] = mychvocod_ana(speech_mat,75,18);
 speech = chvocod_syn(band_envelopes,pitch,100);
-soundsc(speech, 8000)
+% soundsc(speech, 8000)
+if max(speech) > 1
+    speech = speech./max(speech);
+end
+if min(speech) < -1
+    speech = speech./min(speech);
+end
+audiowrite('dec_75_ch_vocod_out.wav', speech, 8000)
 % filt = fir1(50, 500/8000);
 % % freqz(filt)
 % sig_filt = fftfilt(filt, sig_clean);
